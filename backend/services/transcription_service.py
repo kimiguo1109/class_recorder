@@ -160,8 +160,17 @@ English translation:"""
             # 这里先返回模拟数据用于测试
             logger.info("Transcribing audio chunk...")
 
-            # 模拟转录结果
-            transcript_text = "这是一段模拟的转录文本"  # 实际应从 Gemini API 获取
+            # 模拟转录结果 - 使用随机样本测试翻译功能
+            import random
+            sample_texts = [
+                "今天天气很好，我们来学习人工智能",
+                "机器学习是人工智能的一个重要分支",
+                "深度学习使用神经网络来处理复杂问题",
+                "自然语言处理让计算机理解人类语言",
+                "这是一个实时转录系统的演示",
+                "课程内容包括理论和实践两个部分"
+            ]
+            transcript_text = random.choice(sample_texts)
 
             # 检测语言
             detected_lang = self.detect_language(transcript_text)
