@@ -213,12 +213,49 @@ MIT License
 
 ---
 
-**注意**: 此项目使用 Google Gemini API，请确保遵守其使用条款和配额限制。
+## ⚠️ 注意事项
 
-启动后端:
+### 1. 代理配置
+如果你在中国大陆或需要使用代理访问 Google API：
+
+```bash
+# 在 .env 文件中配置代理
+HTTP_PROXY=http://127.0.0.1:7890
+HTTPS_PROXY=http://127.0.0.1:7890
+USE_PROXY=true
+```
+
+**测试 API 连接：**
+```bash
 cd backend
 source venv/bin/activate
-python main.py
+python -c "
+import asyncio
+from services.transcription_service import transcription_service
+
+async def test():
+    result = await transcription_service.call_gemini_api('Hello')
+    print('✅ API 连接成功:', result)
+
+asyncio.run(test())
+"
+```
+
+### 2. API Key 配置
+- 使用 AI Vertex API endpoint
+- API Key 格式：`AQ.xxxxx`
+- **请勿提交 `.env` 文件到公开仓库**（已在 `.gitignore` 中）
+
+### 3. 已测试功能
+- ✅ 语言检测（支持中文、日语、韩语、俄语、阿拉伯语等）
+- ✅ 自动翻译成英文（中文 -> 英文测试通过）
+- ✅ API 调用成功（带代理支持）
+- ✅ 双栏 UI 布局
+- ✅ WebSocket 实时通信
+
+---
+
+**注意**: 此项目使用 Google Gemini API，请确保遵守其使用条款和配额限制。
 
 启动前端（新终端）：
 cd frontend
