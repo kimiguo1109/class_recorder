@@ -384,7 +384,7 @@ class TranscriptionService:
     async def _translate_to_english(self, text: str) -> str:
         """使用 Gemini API 翻译文本为英文"""
         response = await self.client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash-lite",
             contents=f"Translate the following text to English. Only output the translation, no explanations:\n\n{text}"
         )
         return response.text.strip()

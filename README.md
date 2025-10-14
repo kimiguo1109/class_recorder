@@ -207,3 +207,11 @@ MIT License
 
 **注意**: 此项目使用 Google Gemini API，请确保遵守其使用条款和配额限制。
 
+启动后端:
+cd backend
+source venv/bin/activate
+python main.py
+
+启动前端（新终端）：
+cd frontend
+npm run dev

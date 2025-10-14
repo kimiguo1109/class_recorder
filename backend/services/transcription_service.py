@@ -33,7 +33,7 @@ class TranscriptionService:
         max_tokens: int = 2048
     ) -> str:
         """
-        调用 Gemini API（使用 AI Vertex endpoint）
+        调用 Gemini API（使用 AI Vertex endpoint + 代理）
         """
         url = f"{self.api_base_url}/{self.model}:streamGenerateContent?key={self.api_key}"
 
@@ -51,25 +51,49 @@ class TranscriptionService:
         }
 
         try:
-            async with aiohttp.ClientSession() as session:
+            # 配置代理
+            connector = None
+            if settings.USE_PROXY:
+                logger.info(f"Using proxy: {settings.HTTP_PROXY}")
+                connector = aiohttp.TCPConnector()
+            
+            async with aiohttp.ClientSession(connector=connector) as session:
+                # 设置代理
+                proxy = settings.HTTP_PROXY if settings.USE_PROXY else None
+                
                 async with session.post(
                     url,
                     json=payload,
                     headers={"Content-Type": "application/json"},
-                    timeout=aiohttp.ClientTimeout(total=30)
+                    timeout=aiohttp.ClientTimeout(total=30),
+                    proxy=proxy
                 ) as response:
                     if response.status != 200:
                         error_text = await response.text()
                         logger.error(f"Gemini API error: {response.status} - {error_text}")
                         raise Exception(f"API error: {response.status}")
 
+                    # streamGenerateContent 返回数组格式（流式响应）
                     data = await response.json()
-                    text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    
+                    # 合并所有流式块的文本
+                    full_text = ""
+                    if isinstance(data, list):
+                        for chunk in data:
+                            if "candidates" in chunk and len(chunk["candidates"]) > 0:
+                                content = chunk["candidates"][0].get("content", {})
+                                parts = content.get("parts", [])
+                                if parts and len(parts) > 0:
+                                    full_text += parts[0].get("text", "")
+                    else:
+                        # 兼容非流式响应
+                        text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                        full_text = text
 
-                    if not text:
+                    if not full_text:
                         raise Exception("API 返回空响应")
 
-                    return text.strip()
+                    return full_text.strip()
 
         except asyncio.TimeoutError:
             logger.error("Gemini API timeout")
