@@ -65,10 +65,18 @@ cp .env.example .env
 
 **环境变量配置** (`.env`):
 ```env
+# Gemini API Key
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# 服务器配置
 HOST=0.0.0.0
 PORT=8000
 FRONTEND_URL=http://localhost:5173
+
+# 代理配置（如需使用代理）
+HTTP_PROXY=http://127.0.0.1:7890
+HTTPS_PROXY=http://127.0.0.1:7890
+USE_PROXY=true
 ```
 
 ### 3. 前端设置
