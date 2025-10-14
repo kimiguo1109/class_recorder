@@ -43,6 +43,16 @@ export const useWebSocket = (): UseWebSocketReturn => {
 
         if (message.type === 'transcript' && message.data) {
           setTranscripts((prev) => [...prev, message.data]);
+        } else if (message.type === 'translation_update' && message.data) {
+          // 更新翻译结果
+          console.log('📝 Translation update received:', message.data);
+          setTranscripts((prev) => 
+            prev.map(t => 
+              t.id === message.data.id 
+                ? { ...t, translatedText: message.data.translatedText }
+                : t
+            )
+          );
         } else if (message.type === 'error') {
           console.error('Server error:', message.message);
         } else if (message.type === 'ping') {

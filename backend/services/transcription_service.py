@@ -221,7 +221,7 @@ English translation:"""
             traceback.print_exc()
             return ""
 
-    async def transcribe_audio(self, audio_base64: str) -> Dict[str, Any]:
+    async def transcribe_audio(self, audio_base64: str, session_id: str = None, ws_manager = None) -> Dict[str, Any]:
         """
         使用 Whisper 进行真实的音频转录
         """
@@ -275,11 +275,17 @@ English translation:"""
             }
             
             # 如果是中文，后台翻译（不阻塞）
-            if detected_lang == 'zh':
+            if detected_lang == 'zh' and session_id and ws_manager:
                 logger.info(f"🔄 Starting background translation...")
-                # 注意：这里只是启动翻译，不等待结果
-                # 实际项目中可以用 WebSocket 再次推送翻译结果
-                asyncio.create_task(self._translate_in_background(transcript_text, result["id"]))
+                # 启动后台翻译任务，翻译完成后推送更新
+                asyncio.create_task(
+                    self._translate_in_background(
+                        transcript_text, 
+                        result["id"], 
+                        session_id, 
+                        ws_manager
+                    )
+                )
             
             return result
 
@@ -297,14 +303,24 @@ English translation:"""
                 "isFinal": False
             }
 
-    async def _translate_in_background(self, text: str, block_id: str):
+    async def _translate_in_background(self, text: str, block_id: str, session_id: str, ws_manager):
         """
-        后台翻译（不阻塞主流程）
+        后台翻译（不阻塞主流程），完成后推送更新
         """
         try:
             translation = await self.translate_to_english(text, 'zh')
             logger.info(f"✅ Background translation complete for {block_id}: {translation}")
-            # TODO: 通过 WebSocket 推送更新后的翻译
+            
+            # 通过 WebSocket 推送翻译更新
+            await ws_manager.send_message(session_id, {
+                "type": "translation_update",
+                "data": {
+                    "id": block_id,
+                    "translatedText": translation
+                }
+            })
+            logger.info(f"📤 Translation update sent to client: {block_id}")
+            
         except Exception as e:
             logger.error(f"❌ Background translation failed: {e}")
 

@@ -112,8 +112,12 @@ async def websocket_transcribe(websocket: WebSocket, session_id: str = "default"
                 timestamp = message.get("timestamp")
 
                 try:
-                    # 调用转录服务
-                    transcript_data = await transcription_service.transcribe_audio(audio_data)
+                    # 调用转录服务，传递 session_id 和 manager 用于后台翻译推送
+                    transcript_data = await transcription_service.transcribe_audio(
+                        audio_data, 
+                        session_id=session_id, 
+                        ws_manager=manager
+                    )
 
                     # 只有在有转录文本时才发送
                     if transcript_data.get("originalText"):
