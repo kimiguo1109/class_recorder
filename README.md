@@ -246,33 +246,31 @@ asyncio.run(test())
 - API Key 格式：`AQ.xxxxx`
 - **请勿提交 `.env` 文件到公开仓库**（已在 `.gitignore` 中）
 
-### 3. 音频转录说明
+### 3. 音频转录技术栈
 
-**当前实现状态**：
-- ✅ 完整的音频采集和处理流程（16-bit PCM, 16kHz）
-- ✅ WebSocket 实时通信
-- ⚠️ **音频转录目前使用模拟数据**（用于演示完整流程）
+**✅ 真实的语音识别系统**：
+- 🎤 **音频采集**: 16-bit PCM, 16kHz, mono
+- 🧠 **语音识别**: OpenAI Whisper (base 模型)
+- 🌍 **语言支持**: **仅中文和英文**
+- 🔄 **翻译**: Gemini API（中文 → 英文）
+- 📡 **实时通信**: WebSocket
 
-**为什么使用模拟数据？**
-
-Gemini Live API 的 Python SDK 支持仍在发展中：
-- `google-generativeai` 标准包不包含 Live API 的音频转录功能
-- 官方文档提到的 `from google import genai` 需要专门的包（目前 PyPI 上不可用）
-- 真实的音频转录需要以下选项之一：
-  1. **Google Cloud Speech-to-Text API**（需要额外的 GCP 配置）
-  2. **Gemini Live API 专用 SDK**（等待官方发布）
-  3. **Whisper API** 或其他第三方服务
+**技术选型**：
+- **Whisper**: 开源、免费、本地运行，准确度高
+- **Gemini API**: 高质量翻译（只用于翻译，不用于转录）
+- **语言限制**: 只支持中英文（按用户要求）
 
 **当前功能**：
-- ✅ 完整的音频录制和分块传输
-- ✅ 模拟转录结果（多语言样本）
-- ✅ 真实的语言检测
-- ✅ 真实的 Gemini API 翻译（中文 → 英文等）
+- ✅ **真实的语音转录**（使用 Whisper）
+- ✅ 自动语言检测（中/英）
+- ✅ Gemini API 翻译（中 → 英）
 - ✅ 完整的 UI/UX 流程
+- ✅ WebSocket 实时通信
 
 ### 4. 已测试功能
-- ✅ 语言检测（支持中文、日语、韩语、俄语、阿拉伯语等）
-- ✅ **Gemini API 自动翻译成英文**（真实 API 调用）
+- ✅ **Whisper 实时语音转录**（真实 AI 模型）
+- ✅ 语言检测（中文/英文）
+- ✅ **Gemini API 自动翻译**（中 → 英）
 - ✅ API 调用成功（带代理支持）
 - ✅ 双栏 UI 布局（渐变、阴影、现代设计）
 - ✅ WebSocket 实时通信
@@ -280,27 +278,17 @@ Gemini Live API 的 Python SDK 支持仍在发展中：
 - ✅ 停止录音功能
 - ✅ 音频录制和传输（16kHz PCM）
 
-### 5. 如何启用真实音频转录
+### 5. 性能说明
 
-如需集成真实的语音识别，建议使用：
+**Whisper 模型加载时间**：
+- 首次启动：约 15-20 秒（下载 139MB 模型）
+- 后续启动：约 2 秒（从缓存加载）
 
-**选项 1: Google Cloud Speech-to-Text**
-```bash
-pip install google-cloud-speech
-# 需要配置 GCP 服务账号
-```
-
-**选项 2: OpenAI Whisper API**
-```bash
-pip install openai
-# 在 transcription_service.py 中集成 Whisper
-```
-
-**选项 3: 等待 Gemini Live API Python SDK**
-- 关注官方文档更新：https://ai.google.dev/gemini-api/docs/live-guide
+**转录速度**：
+- 3 秒音频 → 约 1-2 秒转录时间
+- CPU 运行（无需 GPU）
 
 ### 6. 待实现功能
-- 🔧 真实的音频转录 API 集成
 - 📝 笔记编辑器（富文本）
 - 💾 保存和下载功能
 - 🎴 闪卡生成

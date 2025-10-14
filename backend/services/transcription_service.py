@@ -1,16 +1,21 @@
 """
-转录服务 - 使用 Gemini API 进行音频转录和翻译
+转录服务 - 使用 Whisper 进行实时音频转录和 Gemini 翻译
 """
 import asyncio
 import base64
-import json
+import io
 import time
 import uuid
 import logging
 from typing import Optional, Dict, Any
 import aiohttp
+import numpy as np
 from config import settings
 import google.generativeai as genai
+
+# Whisper 导入
+import whisper
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +23,7 @@ logger = logging.getLogger(__name__)
 class TranscriptionService:
     """
     实时转录服务
-    使用 Gemini API 进行音频转录和翻译
+    使用 OpenAI Whisper 进行音频转录，Gemini API 进行翻译
     """
 
     def __init__(self):
@@ -29,18 +34,23 @@ class TranscriptionService:
         # 配置 Gemini API
         genai.configure(api_key=self.api_key)
         
-        logger.info(f"✅ TranscriptionService initialized with model: {self.generation_model}")
+        # 初始化 Whisper 模型
+        logger.info("🔄 Loading Whisper model (base)...")
+        self.whisper_model = whisper.load_model("base")  # 使用 base 模型，速度和准确度平衡
+        logger.info("✅ Whisper model loaded successfully")
+        
+        logger.info(f"✅ TranscriptionService initialized")
 
     async def start_live_session(self):
         """
-        启动会话（占位符，实际不需要预先建立会话）
+        启动会话（Whisper 不需要预先建立会话）
         """
-        logger.info(f"✅ Session ready")
+        logger.info("✅ Whisper session ready")
         return True
 
     async def stop_live_session(self):
         """
-        停止会话（占位符）
+        停止会话
         """
         logger.info("✅ Session stopped")
 
@@ -51,7 +61,7 @@ class TranscriptionService:
         max_tokens: int = 2048
     ) -> str:
         """
-        调用 Gemini API（用于翻译等文本任务）
+        调用 Gemini API（用于翻译）
         """
         url = f"{self.api_base_url}/{self.generation_model}:streamGenerateContent?key={self.api_key}"
 
@@ -69,7 +79,6 @@ class TranscriptionService:
         }
 
         try:
-            # 配置代理
             connector = None
             if settings.USE_PROXY:
                 connector = aiohttp.TCPConnector()
@@ -91,7 +100,6 @@ class TranscriptionService:
 
                     data = await response.json()
                     
-                    # 合并所有流式块的文本
                     full_text = ""
                     if isinstance(data, list):
                         for chunk in data:
@@ -118,27 +126,17 @@ class TranscriptionService:
 
     def detect_language(self, text: str) -> str:
         """
-        简单的语言检测（基于 Unicode 字符范围）
+        简单的语言检测（只支持中英文）
         """
         if not text:
             return 'en'
 
         # 中文检测
-        if any('\u4e00' <= char <= '\u9fff' for char in text):
+        chinese_chars = sum(1 for char in text if '\u4e00' <= char <= '\u9fff')
+        total_chars = len(text.replace(' ', ''))
+        
+        if total_chars > 0 and chinese_chars / total_chars > 0.3:
             return 'zh'
-        # 日语检测（平假名、片假名）
-        elif any(('\u3040' <= char <= '\u309f') or ('\u30a0' <= char <= '\u30ff') for char in text):
-            return 'ja'
-        # 韩语检测（谚文）
-        elif any('\uac00' <= char <= '\ud7af' for char in text):
-            return 'ko'
-        # 西里尔字母（俄语等）
-        elif any('\u0400' <= char <= '\u04ff' for char in text):
-            return 'ru'
-        # 阿拉伯语
-        elif any('\u0600' <= char <= '\u06ff' for char in text):
-            return 'ar'
-        # 默认为英语
         else:
             return 'en'
 
@@ -149,7 +147,7 @@ class TranscriptionService:
         if source_lang == 'en':
             return text
 
-        prompt = f"""Translate the following {source_lang} text to English. 
+        prompt = f"""Translate the following Chinese text to English. 
 Only output the English translation, no explanations or additional text.
 
 Text to translate:
@@ -164,67 +162,55 @@ English translation:"""
             logger.error(f"Translation failed: {e}")
             return f"[Translation failed: {str(e)}]"
 
-    async def transcribe_audio_with_whisper(self, audio_base64: str) -> str:
+    async def transcribe_audio_with_whisper(self, audio_bytes: bytes) -> str:
         """
-        使用 Gemini API 尝试转录音频
-        注意：当前 google-generativeai SDK 可能不支持音频输入
-        这是一个临时实现，用于演示流程
+        使用 Whisper 转录音频
         """
         try:
-            # 创建 Gemini 模型
-            model = genai.GenerativeModel(self.generation_model)
+            # 将 PCM 字节转换为 numpy 数组
+            # 音频格式：16-bit PCM, 16kHz, mono
+            audio_array = np.frombuffer(audio_bytes, dtype=np.int16)
             
-            # 尝试使用文件 API（如果支持音频）
-            # 注意：这可能需要不同的 API 端点或方法
-            prompt = "Please transcribe the audio content."
+            # 转换为 float32 并归一化到 [-1, 1]
+            audio_float = audio_array.astype(np.float32) / 32768.0
             
-            # 由于当前限制，我们暂时返回模拟结果
-            # 真实的音频转录需要：
-            # 1. 使用 Google Cloud Speech-to-Text API
-            # 2. 或等待 Gemini Live API Python SDK 正式发布
-            logger.warning("⚠️ Audio transcription with Gemini is not fully supported yet")
-            return ""
+            # Whisper 需要 16kHz 采样率（我们已经是 16kHz）
+            # 在线程池中运行 Whisper（避免阻塞事件循环）
+            result = await asyncio.to_thread(
+                self.whisper_model.transcribe,
+                audio_float,
+                language=None,  # 自动检测语言（中英文）
+                task="transcribe",
+                fp16=False  # 在 CPU 上运行
+            )
+            
+            transcript = result["text"].strip()
+            detected_lang = result.get("language", "unknown")
+            
+            logger.info(f"📝 Whisper transcription: '{transcript}' (lang: {detected_lang})")
+            
+            return transcript
             
         except Exception as e:
-            logger.error(f"Audio transcription failed: {e}")
+            logger.error(f"Whisper transcription failed: {e}")
+            import traceback
+            traceback.print_exc()
             return ""
 
     async def transcribe_audio(self, audio_base64: str) -> Dict[str, Any]:
         """
-        音频转录（当前使用模拟数据，真实转录需要额外的 API）
-        
-        真实实现选项：
-        1. Google Cloud Speech-to-Text API（需要额外配置）
-        2. Gemini Live API（需要专门的 SDK，当前 python 包不支持）
-        3. 其他语音识别服务（Whisper API, Azure Speech 等）
+        使用 Whisper 进行真实的音频转录
         """
         try:
+            # 解码 Base64 音频数据
             audio_bytes = base64.b64decode(audio_base64)
-            logger.info(f"📤 Received {len(audio_bytes)} bytes audio data")
+            logger.info(f"📤 Processing {len(audio_bytes)} bytes audio with Whisper...")
 
-            # TODO: 集成真实的语音识别 API
-            # 当前使用随机模拟数据用于演示
-            import random
-            sample_texts = [
-                "今天天气很好，我们来学习人工智能",
-                "机器学习是人工智能的一个重要分支",
-                "深度学习使用神经网络来处理复杂问题",
-                "自然语言处理让计算机理解人类语言",
-                "这是一个实时转录系统的演示",
-                "课程内容包括理论和实践两个部分",
-                "Good morning everyone, welcome to the class",
-                "今日は人工知能について勉強します",
-                "안녕하세요, 오늘은 AI에 대해 배웁니다"
-            ]
-            
-            # 90% 概率返回转录，10% 概率返回空（模拟静音）
-            if random.random() < 0.9:
-                transcript_text = random.choice(sample_texts)
-            else:
-                transcript_text = ""
+            # 使用 Whisper 转录
+            transcript_text = await self.transcribe_audio_with_whisper(audio_bytes)
             
             if not transcript_text:
-                logger.info("ℹ️ No transcription (silence)")
+                logger.info("ℹ️ No transcription (silence or noise)")
                 return {
                     "id": str(uuid.uuid4()),
                     "timestamp": int(time.time() * 1000),
@@ -235,14 +221,14 @@ English translation:"""
                     "isFinal": False
                 }
 
-            # 检测语言
+            # 检测语言（中英文）
             detected_lang = self.detect_language(transcript_text)
-            logger.info(f"📝 Transcription: {transcript_text} ({detected_lang})")
+            logger.info(f"🌍 Detected language: {detected_lang}")
 
-            # 翻译成英文
+            # 翻译成英文（如果是中文）
             translated_text = transcript_text
-            if detected_lang != 'en':
-                logger.info(f"🔄 Translating {detected_lang} -> en...")
+            if detected_lang == 'zh':
+                logger.info(f"🔄 Translating Chinese to English...")
                 translated_text = await self.translate_to_english(transcript_text, detected_lang)
                 logger.info(f"✅ Translation: {translated_text}")
 
