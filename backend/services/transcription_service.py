@@ -34,12 +34,38 @@ class TranscriptionService:
         # 配置 Gemini API
         genai.configure(api_key=self.api_key)
         
-        # 初始化 Whisper 模型
-        logger.info("🔄 Loading Whisper model (base)...")
-        self.whisper_model = whisper.load_model("base")  # 使用 base 模型，速度和准确度平衡
+        # 初始化 Whisper 模型（使用 small 模型，准确度更高）
+        logger.info("🔄 Loading Whisper model (small)...")
+        self.whisper_model = whisper.load_model("small")  # small 模型，准确度更高
         logger.info("✅ Whisper model loaded successfully")
         
-        logger.info(f"✅ TranscriptionService initialized")
+        # 课程相关术语词汇表（用于 Whisper 提示）
+        self.academic_terms = [
+            # 数学
+            "微积分", "calculus", "导数", "积分", "极限", "函数",
+            "代数", "algebra", "几何", "geometry", "统计", "statistics",
+            "概率", "probability", "线性代数", "linear algebra",
+            "微分方程", "differential equations",
+            
+            # 物理
+            "物理", "physics", "力学", "mechanics", "电磁学", "electromagnetism",
+            "热力学", "thermodynamics", "量子力学", "quantum mechanics",
+            
+            # 计算机
+            "算法", "algorithm", "数据结构", "data structure",
+            "编程", "programming", "人工智能", "artificial intelligence",
+            "机器学习", "machine learning", "深度学习", "deep learning",
+            
+            # 化学
+            "化学", "chemistry", "有机化学", "organic chemistry",
+            "无机化学", "inorganic chemistry",
+            
+            # 生物
+            "生物", "biology", "细胞", "cell", "基因", "gene",
+            "DNA", "蛋白质", "protein"
+        ]
+        
+        logger.info(f"✅ TranscriptionService initialized with {len(self.academic_terms)} academic terms")
 
     async def start_live_session(self):
         """
@@ -188,7 +214,7 @@ English translation:"""
 
     async def transcribe_audio_with_whisper(self, audio_bytes: bytes) -> str:
         """
-        使用 Whisper 转录音频
+        使用 Whisper 转录音频（带专业术语提示）
         """
         try:
             # 将 PCM 字节转换为 numpy 数组
@@ -198,6 +224,10 @@ English translation:"""
             # 转换为 float32 并归一化到 [-1, 1]
             audio_float = audio_array.astype(np.float32) / 32768.0
             
+            # 构建初始提示（包含常用学术术语）
+            # Whisper 会参考这些词汇来提高准确度
+            initial_prompt = "这是一节课程。包含：" + "、".join(self.academic_terms[:20])
+            
             # Whisper 需要 16kHz 采样率（我们已经是 16kHz）
             # 在线程池中运行 Whisper（避免阻塞事件循环）
             result = await asyncio.to_thread(
@@ -205,7 +235,9 @@ English translation:"""
                 audio_float,
                 language=None,  # 自动检测语言（中英文）
                 task="transcribe",
-                fp16=False  # 在 CPU 上运行
+                fp16=False,  # 在 CPU 上运行
+                initial_prompt=initial_prompt,  # 提供专业术语提示
+                temperature=0.0  # 降低温度，减少随机性
             )
             
             transcript = result["text"].strip()
