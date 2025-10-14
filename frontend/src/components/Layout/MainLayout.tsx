@@ -11,10 +11,10 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ leftPanel, rightPanel, bottomControls }: MainLayoutProps) => {
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
       {/* 顶部标题栏 */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <h1 className="text-2xl font-bold text-gray-800">
+      <header className="bg-white border-b border-gray-200 px-6 py-3 shadow-sm">
+        <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           Class Recorder - 课堂录音转录助手
         </h1>
       </header>

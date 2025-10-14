@@ -17,6 +17,8 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const audioBufferRef = useRef<Int16Array[]>([]);
+  const lastSendTimeRef = useRef<number>(0);
 
   const startRecording = useCallback(async (
     onAudioData: (base64Data: string, timestamp: number) => void
@@ -60,12 +62,32 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
           int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
 
-        // 转换为 Base64
-        const uint8Data = new Uint8Array(int16Data.buffer);
-        const base64 = btoa(String.fromCharCode(...uint8Data));
+        // 累积音频数据
+        audioBufferRef.current.push(int16Data);
 
-        // 发送音频数据
-        onAudioData(base64, Date.now());
+        // 每3秒发送一次（避免频繁调用 API）
+        const now = Date.now();
+        if (now - lastSendTimeRef.current >= 3000) {
+          // 合并所有缓冲的音频数据
+          const totalLength = audioBufferRef.current.reduce((sum, arr) => sum + arr.length, 0);
+          const mergedData = new Int16Array(totalLength);
+          let offset = 0;
+          for (const chunk of audioBufferRef.current) {
+            mergedData.set(chunk, offset);
+            offset += chunk.length;
+          }
+
+          // 转换为 Base64
+          const uint8Data = new Uint8Array(mergedData.buffer);
+          const base64 = btoa(String.fromCharCode(...uint8Data));
+
+          // 发送音频数据
+          onAudioData(base64, now);
+
+          // 清空缓冲区
+          audioBufferRef.current = [];
+          lastSendTimeRef.current = now;
+        }
       };
 
       // 连接音频节点
@@ -83,26 +105,38 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   }, []);
 
   const stopRecording = useCallback(() => {
-    // 停止所有音频轨道
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      mediaStreamRef.current = null;
-    }
+    console.log('🛑 Stopping recording...');
+    
+    // 清空音频缓冲区
+    audioBufferRef.current = [];
+    lastSendTimeRef.current = 0;
 
-    // 断开音频处理器
+    // 断开音频处理器（必须先断开，再停止轨道）
     if (processorRef.current) {
       processorRef.current.disconnect();
+      processorRef.current.onaudioprocess = null;
       processorRef.current = null;
     }
 
     // 关闭 AudioContext
     if (audioContextRef.current) {
-      audioContextRef.current.close();
+      audioContextRef.current.close().catch(err => {
+        console.warn('Failed to close AudioContext:', err);
+      });
       audioContextRef.current = null;
     }
 
+    // 停止所有音频轨道
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log('Track stopped:', track.kind);
+      });
+      mediaStreamRef.current = null;
+    }
+
     setIsRecording(false);
-    console.log('⏹️ Recording stopped');
+    console.log('✅ Recording stopped successfully');
   }, []);
 
   return {

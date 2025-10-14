@@ -17,18 +17,18 @@ export const TabsPanel = () => {
   ];
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-white">
       {/* 标签页导航 */}
-      <div className="border-b border-gray-200 px-6">
-        <div className="flex gap-1">
+      <div className="border-b border-gray-200 px-4 bg-gradient-to-r from-purple-50 to-pink-50">
+        <div className="flex gap-1 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 text-sm font-medium rounded-t-lg transition-colors ${
+              className={`px-3 py-2 text-xs font-semibold rounded-t-lg transition-all whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-white text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                  ? 'bg-white text-blue-600 shadow-sm border-t-2 border-blue-500'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
               }`}
             >
               {tab.label}
