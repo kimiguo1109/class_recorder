@@ -59,8 +59,9 @@ async def health_check():
     }
 
 # 导入路由
-from api import websocket
+from api import websocket, notes
 app.include_router(websocket.router)
+app.include_router(notes.router)
 
 if __name__ == "__main__":
     import uvicorn

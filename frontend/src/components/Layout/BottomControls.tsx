@@ -9,6 +9,7 @@ interface BottomControlsProps {
   onStartRecording: () => void;
   onStopRecording: () => void;
   duration: number;
+  onExport: (format: 'markdown' | 'text') => void;
 }
 
 export const BottomControls = ({
@@ -16,12 +17,13 @@ export const BottomControls = ({
   connectionStatus,
   onStartRecording,
   onStopRecording,
-  duration
+  duration,
+  onExport
 }: BottomControlsProps) => {
   return (
-    <div className="px-6 py-4">
-      <div className="flex items-center gap-6">
-        {/* 录音按钮 */}
+    <div className="px-6 py-4 border-t border-gray-200 bg-white">
+      <div className="flex items-center justify-between gap-6">
+        {/* 左侧：录音按钮 */}
         <button
           onClick={isRecording ? onStopRecording : onStartRecording}
           disabled={connectionStatus === 'connecting'}
@@ -44,38 +46,57 @@ export const BottomControls = ({
           )}
         </button>
 
-        {/* 录音时长 */}
-        {isRecording && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">录音时长:</span>
-            <span className="text-lg font-mono font-semibold text-gray-800">
-              {formatDuration(duration)}
-            </span>
-          </div>
-        )}
-
-        {/* 音频波形占位 */}
-        <div className="flex-1 flex items-center">
+        {/* 中间：时长和波形 */}
+        <div className="flex-1 flex items-center gap-4">
           {isRecording && (
-            <div className="w-full h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-              <WaveformPlaceholder />
-            </div>
+            <>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">录音时长:</span>
+                <span className="text-lg font-mono font-semibold text-gray-800">
+                  {formatDuration(duration)}
+                </span>
+              </div>
+              <div className="flex-1 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <WaveformPlaceholder />
+              </div>
+            </>
           )}
         </div>
 
-        {/* 连接状态指示器 */}
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${
-            connectionStatus === 'connected' 
-              ? 'bg-green-500' 
-              : connectionStatus === 'connecting'
-              ? 'bg-yellow-500 animate-pulse'
-              : 'bg-gray-400'
-          }`} />
-          <span className="text-sm text-gray-600">
-            {connectionStatus === 'connected' ? '已连接' : 
-             connectionStatus === 'connecting' ? '连接中...' : '未连接'}
-          </span>
+        {/* 右侧：导出和连接状态 */}
+        <div className="flex items-center gap-4">
+          {/* 导出按钮 */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => onExport('markdown')}
+              className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              title="导出为 Markdown"
+            >
+              📄 Markdown
+            </button>
+            <button
+              onClick={() => onExport('text')}
+              className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              title="导出为文本"
+            >
+              📝 Text
+            </button>
+          </div>
+
+          {/* 连接状态 */}
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${
+              connectionStatus === 'connected' 
+                ? 'bg-green-500' 
+                : connectionStatus === 'connecting'
+                ? 'bg-yellow-500 animate-pulse'
+                : 'bg-gray-400'
+            }`} />
+            <span className="text-sm text-gray-600">
+              {connectionStatus === 'connected' ? '已连接' : 
+               connectionStatus === 'connecting' ? '连接中...' : '未连接'}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -104,4 +125,3 @@ const WaveformPlaceholder = () => (
     ))}
   </div>
 );
-
