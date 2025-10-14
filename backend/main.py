@@ -65,6 +65,13 @@ app.include_router(notes.router)
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # 清理旧日志文件
+    log_file = "app.log"
+    if os.path.exists(log_file):
+        os.remove(log_file)
+        print(f"✅ 已清理旧日志: {log_file}")
+    
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", 8000))
     
