@@ -10,6 +10,8 @@ import logging
 from typing import Optional, Dict, Any
 import aiohttp
 from config import settings
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +19,59 @@ logger = logging.getLogger(__name__)
 class TranscriptionService:
     """
     实时转录服务
-    使用 Gemini 2.5 Flash Lite 进行音频转录和翻译
+    使用 Gemini Live API 进行音频转录和翻译
     """
 
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
-        self.model = settings.GEMINI_LIVE_MODEL
-        # 使用 AI Vertex API endpoint
+        self.live_model = "gemini-live-2.5-flash-preview"  # Gemini Live API 模型
+        self.generation_model = settings.GEMINI_GENERATION_MODEL  # 用于翻译
         self.api_base_url = "https://aiplatform.googleapis.com/v1/publishers/google/models"
+        
+        # 初始化 Gemini Client
+        self.client = genai.Client(api_key=self.api_key)
+        self.live_session: Optional[Any] = None
+        
+        logger.info(f"✅ TranscriptionService initialized with Live model: {self.live_model}")
+
+    async def start_live_session(self):
+        """
+        启动 Gemini Live API 会话
+        """
+        try:
+            config = {
+                "response_modalities": ["TEXT"],  # 只需要文本响应
+                "input_audio_transcription": {}   # 启用音频转录
+            }
+            
+            logger.info(f"🚀 Starting Gemini Live API session...")
+            
+            # 使用 aio.live.connect 建立异步连接
+            self.live_session = await self.client.aio.live.connect(
+                model=self.live_model,
+                config=config
+            )
+            
+            logger.info(f"✅ Gemini Live API session started successfully")
+            return self.live_session
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to start Gemini Live API session: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+
+    async def stop_live_session(self):
+        """
+        停止 Gemini Live API 会话
+        """
+        if self.live_session:
+            try:
+                await self.live_session.close()
+                self.live_session = None
+                logger.info("✅ Gemini Live API session stopped")
+            except Exception as e:
+                logger.error(f"❌ Error stopping live session: {e}")
 
     async def call_gemini_api(
         self, 
@@ -33,9 +80,9 @@ class TranscriptionService:
         max_tokens: int = 2048
     ) -> str:
         """
-        调用 Gemini API（使用 AI Vertex endpoint + 代理）
+        调用 Gemini API（用于翻译等非转录任务）
         """
-        url = f"{self.api_base_url}/{self.model}:streamGenerateContent?key={self.api_key}"
+        url = f"{self.api_base_url}/{self.generation_model}:streamGenerateContent?key={self.api_key}"
 
         payload = {
             "contents": [
@@ -54,18 +101,16 @@ class TranscriptionService:
             # 配置代理
             connector = None
             if settings.USE_PROXY:
-                logger.info(f"Using proxy: {settings.HTTP_PROXY}")
                 connector = aiohttp.TCPConnector()
             
             async with aiohttp.ClientSession(connector=connector) as session:
-                # 设置代理
                 proxy = settings.HTTP_PROXY if settings.USE_PROXY else None
                 
                 async with session.post(
                     url,
                     json=payload,
                     headers={"Content-Type": "application/json"},
-                    timeout=aiohttp.ClientTimeout(total=30),
+                    timeout=aiohttp.ClientTimeout(total=settings.API_TIMEOUT),
                     proxy=proxy
                 ) as response:
                     if response.status != 200:
@@ -73,7 +118,6 @@ class TranscriptionService:
                         logger.error(f"Gemini API error: {response.status} - {error_text}")
                         raise Exception(f"API error: {response.status}")
 
-                    # streamGenerateContent 返回数组格式（流式响应）
                     data = await response.json()
                     
                     # 合并所有流式块的文本
@@ -86,7 +130,6 @@ class TranscriptionService:
                                 if parts and len(parts) > 0:
                                     full_text += parts[0].get("text", "")
                     else:
-                        # 兼容非流式响应
                         text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                         full_text = text
 
@@ -152,33 +195,74 @@ English translation:"""
 
     async def transcribe_audio(self, audio_base64: str) -> Dict[str, Any]:
         """
-        转录音频（模拟实现，实际应使用 Gemini Live API）
-        由于 Gemini Live API 需要 WebSocket 连接，这里先提供模拟实现
+        使用 Gemini Live API 转录音频（真实实现）
         """
         try:
-            # TODO: 实际实现应该使用 Gemini Live API 的 WebSocket 连接
-            # 这里先返回模拟数据用于测试
-            logger.info("Transcribing audio chunk...")
+            if not self.live_session:
+                logger.warning("⚠️ Live session not started, starting now...")
+                await self.start_live_session()
 
-            # 模拟转录结果 - 使用随机样本测试翻译功能
-            import random
-            sample_texts = [
-                "今天天气很好，我们来学习人工智能",
-                "机器学习是人工智能的一个重要分支",
-                "深度学习使用神经网络来处理复杂问题",
-                "自然语言处理让计算机理解人类语言",
-                "这是一个实时转录系统的演示",
-                "课程内容包括理论和实践两个部分"
-            ]
-            transcript_text = random.choice(sample_texts)
+            # 将 Base64 解码为字节流
+            audio_bytes = base64.b64decode(audio_base64)
+            
+            logger.info(f"📤 Sending {len(audio_bytes)} bytes to Gemini Live API...")
+
+            # 发送音频数据到 Gemini Live API
+            await self.live_session.send_realtime_input(
+                audio=types.Blob(
+                    data=audio_bytes,
+                    mime_type="audio/pcm;rate=16000"
+                )
+            )
+
+            # 接收转录结果
+            transcript_text = ""
+            timeout_counter = 0
+            max_timeout = 50  # 最多等待 5 秒（50 * 100ms）
+            
+            async for response in self.live_session.receive():
+                # 检查是否有输入转录
+                if response.server_content and response.server_content.input_transcription:
+                    transcript_text = response.server_content.input_transcription.text
+                    logger.info(f"📝 Transcription: {transcript_text}")
+                    break  # 收到转录后立即返回
+                
+                # 检查对话是否完成
+                if response.server_content and response.server_content.turn_complete:
+                    logger.debug("Turn complete without transcription")
+                    break
+                
+                # 超时保护
+                timeout_counter += 1
+                if timeout_counter >= max_timeout:
+                    logger.warning("⚠️ Transcription timeout")
+                    break
+                
+                await asyncio.sleep(0.1)
+
+            # 如果没有获取到转录文本，返回空结果
+            if not transcript_text:
+                logger.info("ℹ️ No transcription (silence or noise)")
+                return {
+                    "id": str(uuid.uuid4()),
+                    "timestamp": int(time.time() * 1000),
+                    "originalText": "",
+                    "translatedText": "",
+                    "detectedLanguage": "unknown",
+                    "startTime": self._format_time(time.time()),
+                    "isFinal": False
+                }
 
             # 检测语言
             detected_lang = self.detect_language(transcript_text)
+            logger.info(f"🌍 Detected language: {detected_lang}")
 
             # 翻译成英文
             translated_text = transcript_text
             if detected_lang != 'en':
+                logger.info(f"🔄 Translating {detected_lang} -> en...")
                 translated_text = await self.translate_to_english(transcript_text, detected_lang)
+                logger.info(f"✅ Translation: {translated_text}")
 
             return {
                 "id": str(uuid.uuid4()),
@@ -191,8 +275,18 @@ English translation:"""
             }
 
         except Exception as e:
-            logger.error(f"Transcription error: {e}")
-            raise
+            logger.error(f"❌ Transcription error: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "id": str(uuid.uuid4()),
+                "timestamp": int(time.time() * 1000),
+                "originalText": f"[转录错误: {str(e)}]",
+                "translatedText": f"[Transcription Error: {str(e)}]",
+                "detectedLanguage": "unknown",
+                "startTime": self._format_time(time.time()),
+                "isFinal": False
+            }
 
     def _format_time(self, timestamp: float) -> str:
         """
@@ -205,4 +299,3 @@ English translation:"""
 
 # 全局实例
 transcription_service = TranscriptionService()
-

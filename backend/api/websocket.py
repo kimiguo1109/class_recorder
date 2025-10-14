@@ -70,6 +70,18 @@ async def websocket_transcribe(websocket: WebSocket, session_id: str = "default"
     """
     await manager.connect(websocket, session_id)
 
+    # 启动 Gemini Live API 会话
+    try:
+        await transcription_service.start_live_session()
+    except Exception as e:
+        logger.error(f"Failed to start live session: {e}")
+        await manager.send_message(session_id, {
+            "type": "error",
+            "message": f"无法启动转录服务: {str(e)}"
+        })
+        manager.disconnect(session_id)
+        return
+
     # 心跳任务
     async def heartbeat():
         """每 30 秒发送心跳"""
@@ -103,11 +115,12 @@ async def websocket_transcribe(websocket: WebSocket, session_id: str = "default"
                     # 调用转录服务
                     transcript_data = await transcription_service.transcribe_audio(audio_data)
 
-                    # 发送转录结果
-                    await manager.send_message(session_id, {
-                        "type": "transcript",
-                        "data": transcript_data
-                    })
+                    # 只有在有转录文本时才发送
+                    if transcript_data.get("originalText"):
+                        await manager.send_message(session_id, {
+                            "type": "transcript",
+                            "data": transcript_data
+                        })
 
                 except Exception as e:
                     logger.error(f"Transcription error: {e}")
@@ -119,6 +132,13 @@ async def websocket_transcribe(websocket: WebSocket, session_id: str = "default"
             elif message_type == "pong":
                 # 心跳响应
                 logger.debug(f"Received pong from {session_id}")
+            
+            elif message_type == "stop":
+                # 停止录音，关闭 Live API 会话
+                logger.info("Received stop signal, closing live session...")
+                await transcription_service.stop_live_session()
+                await manager.send_message(session_id, {"type": "stopped"})
+                break
 
             else:
                 logger.warning(f"Unknown message type: {message_type}")
@@ -127,7 +147,12 @@ async def websocket_transcribe(websocket: WebSocket, session_id: str = "default"
         logger.info(f"Client disconnected: {session_id}")
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
+        # 停止 Live API 会话
+        await transcription_service.stop_live_session()
+        
         # 取消心跳任务
         heartbeat_task.cancel()
         try:

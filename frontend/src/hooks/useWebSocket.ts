@@ -80,8 +80,21 @@ export const useWebSocket = (): UseWebSocketReturn => {
   const disconnect = useCallback(() => {
     if (wsRef.current) {
       reconnectAttempts.current = maxReconnectAttempts; // 阻止自动重连
-      wsRef.current.close();
-      wsRef.current = null;
+      
+      // 发送停止信号给后端
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'stop' }));
+        console.log('📤 Sent stop signal to server');
+      }
+      
+      // 延迟关闭，确保停止信号发送成功
+      setTimeout(() => {
+        if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+        }
+      }, 100);
+      
       setConnectionStatus('disconnected');
     }
   }, []);
