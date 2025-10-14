@@ -162,6 +162,30 @@ English translation:"""
             logger.error(f"Translation failed: {e}")
             return f"[Translation failed: {str(e)}]"
 
+    def is_silence(self, audio_bytes: bytes) -> bool:
+        """
+        检测音频是否为静音
+        """
+        try:
+            audio_array = np.frombuffer(audio_bytes, dtype=np.int16)
+            audio_float = audio_array.astype(np.float32) / 32768.0
+            
+            # 计算音频能量（RMS）
+            energy = np.sqrt(np.mean(audio_float ** 2))
+            
+            # 静音阈值（可调整）
+            silence_threshold = 0.01
+            
+            is_silent = energy < silence_threshold
+            if is_silent:
+                logger.debug(f"🔇 Silence detected (energy: {energy:.4f})")
+            
+            return is_silent
+            
+        except Exception as e:
+            logger.error(f"Silence detection failed: {e}")
+            return False
+
     async def transcribe_audio_with_whisper(self, audio_bytes: bytes) -> str:
         """
         使用 Whisper 转录音频
@@ -204,6 +228,20 @@ English translation:"""
         try:
             # 解码 Base64 音频数据
             audio_bytes = base64.b64decode(audio_base64)
+            
+            # 先检测是否为静音，跳过静音块
+            if self.is_silence(audio_bytes):
+                logger.debug(f"⏭️ Skipping silence ({len(audio_bytes)} bytes)")
+                return {
+                    "id": str(uuid.uuid4()),
+                    "timestamp": int(time.time() * 1000),
+                    "originalText": "",
+                    "translatedText": "",
+                    "detectedLanguage": "unknown",
+                    "startTime": self._format_time(time.time()),
+                    "isFinal": False
+                }
+            
             logger.info(f"📤 Processing {len(audio_bytes)} bytes audio with Whisper...")
 
             # 使用 Whisper 转录
@@ -225,22 +263,25 @@ English translation:"""
             detected_lang = self.detect_language(transcript_text)
             logger.info(f"🌍 Detected language: {detected_lang}")
 
-            # 翻译成英文（如果是中文）
-            translated_text = transcript_text
-            if detected_lang == 'zh':
-                logger.info(f"🔄 Translating Chinese to English...")
-                translated_text = await self.translate_to_english(transcript_text, detected_lang)
-                logger.info(f"✅ Translation: {translated_text}")
-
-            return {
+            # 先返回原文（不等待翻译）
+            result = {
                 "id": str(uuid.uuid4()),
                 "timestamp": int(time.time() * 1000),
                 "originalText": transcript_text,
-                "translatedText": translated_text,
+                "translatedText": transcript_text if detected_lang == 'en' else "",  # 英文不翻译
                 "detectedLanguage": detected_lang,
                 "startTime": self._format_time(time.time()),
                 "isFinal": True
             }
+            
+            # 如果是中文，后台翻译（不阻塞）
+            if detected_lang == 'zh':
+                logger.info(f"🔄 Starting background translation...")
+                # 注意：这里只是启动翻译，不等待结果
+                # 实际项目中可以用 WebSocket 再次推送翻译结果
+                asyncio.create_task(self._translate_in_background(transcript_text, result["id"]))
+            
+            return result
 
         except Exception as e:
             logger.error(f"❌ Transcription error: {e}")
@@ -255,6 +296,17 @@ English translation:"""
                 "startTime": self._format_time(time.time()),
                 "isFinal": False
             }
+
+    async def _translate_in_background(self, text: str, block_id: str):
+        """
+        后台翻译（不阻塞主流程）
+        """
+        try:
+            translation = await self.translate_to_english(text, 'zh')
+            logger.info(f"✅ Background translation complete for {block_id}: {translation}")
+            # TODO: 通过 WebSocket 推送更新后的翻译
+        except Exception as e:
+            logger.error(f"❌ Background translation failed: {e}")
 
     def _format_time(self, timestamp: float) -> str:
         """
