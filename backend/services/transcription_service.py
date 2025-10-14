@@ -23,8 +23,8 @@ class TranscriptionService:
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
         self.model = settings.GEMINI_LIVE_MODEL
-        # 参考 prepGo_bak 的 API 调用方式
-        self.api_base_url = "https://generativelanguage.googleapis.com/v1beta"
+        # 使用 AI Vertex API endpoint
+        self.api_base_url = "https://aiplatform.googleapis.com/v1/publishers/google/models"
 
     async def call_gemini_api(
         self, 
@@ -33,9 +33,9 @@ class TranscriptionService:
         max_tokens: int = 2048
     ) -> str:
         """
-        调用 Gemini API（参考 prepGo_bak 的实现）
+        调用 Gemini API（使用 AI Vertex endpoint）
         """
-        url = f"{self.api_base_url}/models/{self.model}:generateContent?key={self.api_key}"
+        url = f"{self.api_base_url}/{self.model}:streamGenerateContent?key={self.api_key}"
 
         payload = {
             "contents": [

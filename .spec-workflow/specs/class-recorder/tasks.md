@@ -391,7 +391,7 @@ After completion: Update this task status to [x] in tasks.md
 - [ ] **创建闪卡生成端点**
   - 文件: `backend/api/generate.py`
   - 实现 `POST /api/generate/flashcards`
-  - 使用 Gemini 2.0 Flash 生成闪卡
+  - 使用 Gemini 2.5 Flash Lite生成闪卡
   - 精心设计 Prompt（参考 design.md）
 
 **_Prompt:**
