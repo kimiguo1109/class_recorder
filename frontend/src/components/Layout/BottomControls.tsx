@@ -32,23 +32,31 @@ export const BottomControls = ({
         ? recordingUrl 
         : `http://localhost:8000${recordingUrl}`;
       
+      // 从 URL 中提取文件名（去掉查询参数）
+      const urlObj = new URL(fullUrl);
+      const filename = urlObj.pathname.split('/').pop() || 'recording.wav';
+      
       // 通过 fetch 获取文件（避免跳转到 S3）
       const response = await fetch(fullUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       const blob = await response.blob();
       
       // 创建本地 Blob URL 并下载
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = recordingUrl.split('/').pop() || 'recording.wav';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       
       // 清理 Blob URL
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+      console.log('✅ 录音下载成功:', filename);
     } catch (error) {
-      console.error('下载录音失败:', error);
+      console.error('❌ 下载录音失败:', error);
       alert('下载录音失败，请重试');
     }
   };
