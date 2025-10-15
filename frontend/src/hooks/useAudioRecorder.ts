@@ -86,6 +86,12 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         }
 
         const now = Date.now();
+        
+        // 初始化 lastSendTimeRef（第一次）
+        if (lastSendTimeRef.current === 0) {
+          lastSendTimeRef.current = now;
+        }
+        
         const timeSinceLastSend = now - lastSendTimeRef.current;
         const bufferDuration = audioBufferRef.current.length * 4096 / 16000; // 秒
 
@@ -163,6 +169,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
     audioBufferRef.current = [];
     allAudioDataRef.current = [];
     lastSendTimeRef.current = 0;
+    silenceCountRef.current = 0;
 
     // 断开音频处理器（必须先断开，再停止轨道）
     if (processorRef.current) {
