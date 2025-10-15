@@ -17,6 +17,9 @@ import google.generativeai as genai
 import whisper
 import torch
 
+# 导入声纹识别服务
+from services.speaker_recognition_service import speaker_recognition_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,6 +41,24 @@ class TranscriptionService:
         logger.info("🔄 Loading Whisper model (small)...")
         self.whisper_model = whisper.load_model("small")  # small 模型，准确度更高
         logger.info("✅ Whisper model loaded successfully")
+        
+        # 初始化说话人识别模型（可选，需要 HuggingFace token）
+        self.diarization_pipeline = None
+        self.enable_speaker_detection = False  # 默认关闭，需要配置后开启
+        try:
+            hf_token = settings.HUGGINGFACE_TOKEN if hasattr(settings, 'HUGGINGFACE_TOKEN') else None
+            if hf_token:
+                logger.info("🔄 Loading speaker diarization model...")
+                self.diarization_pipeline = Pipeline.from_pretrained(
+                    "pyannote/speaker-diarization-3.1",
+                    use_auth_token=hf_token
+                )
+                self.enable_speaker_detection = True
+                logger.info("✅ Speaker diarization model loaded")
+            else:
+                logger.info("ℹ️ Speaker diarization disabled (no HuggingFace token)")
+        except Exception as e:
+            logger.warning(f"⚠️ Speaker diarization not available: {e}")
         
         # 课程相关术语词汇表（用于 Whisper 提示）
         self.academic_terms = [
@@ -212,9 +233,30 @@ English translation:"""
             logger.error(f"Silence detection failed: {e}")
             return False
 
-    async def transcribe_audio_with_whisper(self, audio_bytes: bytes) -> str:
+    def detect_speaker(self, audio_bytes: bytes, timestamp: float) -> tuple[str, float]:
+        """
+        检测说话人（使用声纹识别）
+        
+        返回:
+            (说话人类型, 置信度)
+        """
+        try:
+            # 使用声纹识别服务
+            speaker_type, confidence = speaker_recognition_service.identify_speaker(audio_bytes)
+            
+            logger.debug(f"🎤 Speaker detected: {speaker_type} (confidence: {confidence:.2f})")
+            return speaker_type, confidence
+                
+        except Exception as e:
+            logger.error(f"Speaker detection failed: {e}")
+            return "unknown", 0.0
+
+    async def transcribe_audio_with_whisper(self, audio_bytes: bytes) -> tuple[str, str, float]:
         """
         使用 Whisper 转录音频（带专业术语提示）
+        
+        返回:
+            (转录文本, 说话人类型, 置信度)
         """
         try:
             # 将 PCM 字节转换为 numpy 数组
@@ -243,15 +285,18 @@ English translation:"""
             transcript = result["text"].strip()
             detected_lang = result.get("language", "unknown")
             
-            logger.info(f"📝 Whisper transcription: '{transcript}' (lang: {detected_lang})")
+            # 检测说话人（使用声纹识别）
+            speaker_type, confidence = self.detect_speaker(audio_bytes, time.time())
             
-            return transcript
+            logger.info(f"📝 Whisper transcription: '{transcript}' (lang: {detected_lang}, speaker: {speaker_type}, confidence: {confidence:.2f})")
+            
+            return transcript, speaker_type, confidence
             
         except Exception as e:
             logger.error(f"Whisper transcription failed: {e}")
             import traceback
             traceback.print_exc()
-            return ""
+            return "", "unknown", 0.0
 
     async def transcribe_audio(self, audio_base64: str, session_id: str = None, ws_manager = None) -> Dict[str, Any]:
         """
@@ -276,8 +321,8 @@ English translation:"""
             
             logger.info(f"📤 Processing {len(audio_bytes)} bytes audio with Whisper...")
 
-            # 使用 Whisper 转录
-            transcript_text = await self.transcribe_audio_with_whisper(audio_bytes)
+            # 使用 Whisper 转录 + 说话人识别
+            transcript_text, speaker_type, speaker_confidence = await self.transcribe_audio_with_whisper(audio_bytes)
             
             if not transcript_text:
                 logger.info("ℹ️ No transcription (silence or noise)")
@@ -302,6 +347,8 @@ English translation:"""
                 "originalText": transcript_text,
                 "translatedText": transcript_text if detected_lang == 'en' else "",  # 英文不翻译
                 "detectedLanguage": detected_lang,
+                "speaker": speaker_type,  # 说话人类型（professor/student/unknown）
+                "speakerConfidence": speaker_confidence,  # 识别置信度
                 "startTime": self._format_time(time.time()),
                 "isFinal": True
             }

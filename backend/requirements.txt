@@ -8,4 +8,6 @@ pydantic==2.6.3
 openai-whisper
 torch
 numpy>=1.25.2
+pyannote.audio
+speechbrain
 

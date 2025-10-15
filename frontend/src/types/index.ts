@@ -8,6 +8,8 @@ export interface TranscriptBlock {
   originalText: string;
   translatedText: string;
   detectedLanguage: string;
+  speaker?: string;  // 说话人类型 (professor/student/unknown)
+  speakerConfidence?: number;  // 识别置信度 (0-1)
   startTime: string;
   isFinal: boolean;
 }

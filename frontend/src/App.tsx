@@ -5,6 +5,7 @@ import { MainLayout } from './components/Layout/MainLayout';
 import { TranscriptPanel } from './components/Transcript/TranscriptPanel';
 import { TabsPanel } from './components/AITools/TabsPanel';
 import { BottomControls } from './components/Layout/BottomControls';
+import { VoiceRegistration } from './components/Speaker/VoiceRegistration';
 
 function App() {
   const { connectionStatus, connect, disconnect, sendAudioChunk, transcripts } = useWebSocket();
@@ -12,6 +13,7 @@ function App() {
   const [sessionId] = useState(() => `session_${Date.now()}`);
   const [duration, setDuration] = useState(0);
   const [notes, setNotes] = useState('');
+  const [showVoiceRegistration, setShowVoiceRegistration] = useState(false);
 
   // 录音时长计时器
   useEffect(() => {
@@ -76,7 +78,12 @@ function App() {
   return (
     <>
       <MainLayout
-        leftPanel={<TranscriptPanel transcripts={transcripts} />}
+        leftPanel={
+          <TranscriptPanel 
+            transcripts={transcripts}
+            onOpenVoiceSettings={() => setShowVoiceRegistration(true)}
+          />
+        }
         rightPanel={<TabsPanel notes={notes} onNotesChange={setNotes} />}
         bottomControls={
           <BottomControls
@@ -90,9 +97,14 @@ function App() {
         }
       />
 
+      {/* 声音注册对话框 */}
+      {showVoiceRegistration && (
+        <VoiceRegistration onClose={() => setShowVoiceRegistration(false)} />
+      )}
+
       {/* 错误提示 Toast */}
       {error && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
           ❌ {error}
         </div>
       )}
