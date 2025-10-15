@@ -114,9 +114,15 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
             offset += chunk.length;
           }
 
-          // 转换为 Base64
+          // 转换为 Base64（分块处理避免栈溢出）
           const uint8Data = new Uint8Array(mergedData.buffer);
-          const base64 = btoa(String.fromCharCode(...uint8Data));
+          let base64 = '';
+          const chunkSize = 8192; // 每次处理 8KB
+          for (let i = 0; i < uint8Data.length; i += chunkSize) {
+            const chunk = uint8Data.subarray(i, Math.min(i + chunkSize, uint8Data.length));
+            base64 += String.fromCharCode.apply(null, Array.from(chunk));
+          }
+          base64 = btoa(base64);
 
           // 发送音频数据
           console.log(`📤 Sending ${bufferDuration.toFixed(1)}s audio (silence: ${isSilent})`);
