@@ -23,6 +23,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   const allAudioDataRef = useRef<Int16Array[]>([]); // 保存完整录音
   const lastSendTimeRef = useRef<number>(0);
   const silenceCountRef = useRef<number>(0); // 连续静音帧计数
+  const isFirstChunkRef = useRef<boolean>(true); // 是否是第一次发送
 
   const startRecording = useCallback(async (
     onAudioData: (base64Data: string, timestamp: number) => void
@@ -96,13 +97,14 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         const bufferDuration = audioBufferRef.current.length * 4096 / 16000; // 秒
 
         // 智能发送策略：
-        // 1. 至少累积 5 秒音频（给 Whisper 更多上下文）
-        // 2. 检测到连续 10 帧（约 2.5 秒）静音后发送（自然停顿点）
-        // 3. 最多累积 10 秒（避免过长）
-        const shouldSend = (
-          (timeSinceLastSend >= 5000 && silenceCountRef.current >= 10) || // 5秒后遇到停顿
-          timeSinceLastSend >= 10000 // 最长10秒
-        );
+        // 第一次：3秒快速发送（避免初始延迟）
+        // 后续：5-10秒智能断句
+        const shouldSend = isFirstChunkRef.current
+          ? timeSinceLastSend >= 3000 // 第一次：3秒快速发送
+          : (
+              (timeSinceLastSend >= 5000 && silenceCountRef.current >= 10) || // 5秒后遇到停顿
+              timeSinceLastSend >= 10000 // 最长10秒
+            );
 
         if (shouldSend && audioBufferRef.current.length > 0) {
           // 合并所有缓冲的音频数据
@@ -125,13 +127,15 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
           base64 = btoa(base64);
 
           // 发送音频数据
-          console.log(`📤 Sending ${bufferDuration.toFixed(1)}s audio (silence: ${isSilent})`);
+          const chunkType = isFirstChunkRef.current ? '[FIRST]' : '[NORMAL]';
+          console.log(`📤 Sending ${bufferDuration.toFixed(1)}s audio ${chunkType} (silence: ${isSilent})`);
           onAudioData(base64, now);
 
           // 清空缓冲区和静音计数
           audioBufferRef.current = [];
           silenceCountRef.current = 0;
           lastSendTimeRef.current = now;
+          isFirstChunkRef.current = false; // 标记为非首次
         }
       };
 
@@ -176,6 +180,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
     allAudioDataRef.current = [];
     lastSendTimeRef.current = 0;
     silenceCountRef.current = 0;
+    isFirstChunkRef.current = true; // 重置首次标记
 
     // 断开音频处理器（必须先断开，再停止轨道）
     if (processorRef.current) {

@@ -323,7 +323,7 @@ English translation:"""
             result = await asyncio.to_thread(
                 self.whisper_model.transcribe,
                 audio_float,
-                language=None,  # 自动检测语言（中英文）
+                language='zh',  # 强制中文模式（可识别中英混合）
                 task="transcribe",
                 fp16=False,  # 在 CPU 上运行
                 initial_prompt=initial_prompt,  # 提供专业术语提示
@@ -332,7 +332,9 @@ English translation:"""
                 no_speech_threshold=0.6,  # 提高静音检测阈值
                 logprob_threshold=-1.0,  # 降低置信度阈值，减少幻觉
                 compression_ratio_threshold=2.4,  # 压缩率阈值，过滤重复内容
-                word_timestamps=False  # 关闭单词时间戳，提高速度
+                word_timestamps=False,  # 关闭单词时间戳，提高速度
+                beam_size=5,  # 使用束搜索，提高准确度
+                best_of=5  # 生成5个候选，选最好的
             )
             
             transcript = result["text"].strip()
