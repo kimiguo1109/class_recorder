@@ -10,6 +10,7 @@ interface BottomControlsProps {
   onStopRecording: () => void;
   duration: number;
   onExport: (format: 'markdown' | 'text') => void;
+  recordingUrl?: string | null;
 }
 
 export const BottomControls = ({
@@ -18,8 +19,18 @@ export const BottomControls = ({
   onStartRecording,
   onStopRecording,
   duration,
-  onExport
+  onExport,
+  recordingUrl
 }: BottomControlsProps) => {
+  
+  const handleDownloadRecording = () => {
+    if (recordingUrl) {
+      const a = document.createElement('a');
+      a.href = recordingUrl;
+      a.download = recordingUrl.split('/').pop() || 'recording.wav';
+      a.click();
+    }
+  };
   return (
     <div className="px-6 py-4 border-t border-gray-200 bg-white">
       <div className="flex items-center justify-between gap-6">
@@ -81,6 +92,16 @@ export const BottomControls = ({
             >
               📝 Text
             </button>
+            {/* 下载录音按钮 */}
+            {recordingUrl && (
+              <button
+                onClick={handleDownloadRecording}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg hover:shadow-lg transition-all"
+                title="下载录音文件"
+              >
+                🎵 下载录音
+              </button>
+            )}
           </div>
 
           {/* 连接状态 */}

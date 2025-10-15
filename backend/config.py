@@ -28,6 +28,13 @@ class Settings:
     
     # API 配置
     API_TIMEOUT: int = 30  # 秒
+    
+    # AWS S3 配置
+    AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+    AWS_S3_BUCKET: str = os.getenv("AWS_S3_BUCKET", "")
+    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+    USE_S3_STORAGE: bool = os.getenv("USE_S3_STORAGE", "false").lower() == "true"
 
 settings = Settings()
 

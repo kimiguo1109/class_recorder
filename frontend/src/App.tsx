@@ -14,6 +14,7 @@ function App() {
   const [duration, setDuration] = useState(0);
   const [notes, setNotes] = useState('');
   const [showVoiceRegistration, setShowVoiceRegistration] = useState(false);
+  const [savedRecordingUrl, setSavedRecordingUrl] = useState<string | null>(null);
 
   // 录音时长计时器
   useEffect(() => {
@@ -47,9 +48,32 @@ function App() {
     }
   };
 
-  const handleStopRecording = () => {
-    stopRecording();
+  const handleStopRecording = async () => {
+    const audioBlob = stopRecording();
     disconnect();
+    
+    // 如果有录音，上传到后端
+    if (audioBlob) {
+      try {
+        const formData = new FormData();
+        formData.append('audio', audioBlob, `recording_${sessionId}.wav`);
+        formData.append('sessionId', sessionId);
+        
+        const response = await fetch('http://localhost:8000/api/recording/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setSavedRecordingUrl(data.downloadUrl);
+          console.log('✅ Recording uploaded:', data.downloadUrl);
+        }
+      } catch (err) {
+        console.error('❌ Failed to upload recording:', err);
+      }
+    }
   };
 
   const handleExport = async (format: 'markdown' | 'text') => {
@@ -93,6 +117,7 @@ function App() {
             onStopRecording={handleStopRecording}
             duration={duration}
             onExport={handleExport}
+            recordingUrl={savedRecordingUrl}
           />
         }
       />

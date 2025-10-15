@@ -6,18 +6,21 @@ import { useState, useCallback, useRef } from 'react';
 interface UseAudioRecorderReturn {
   isRecording: boolean;
   startRecording: (onAudioData: (base64Data: string, timestamp: number) => void) => Promise<void>;
-  stopRecording: () => void;
+  stopRecording: () => Blob | null;
   error: string | null;
+  recordingBlob: Blob | null;
 }
 
 export const useAudioRecorder = (): UseAudioRecorderReturn => {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const audioBufferRef = useRef<Int16Array[]>([]);
+  const allAudioDataRef = useRef<Int16Array[]>([]); // 保存完整录音
   const lastSendTimeRef = useRef<number>(0);
 
   const startRecording = useCallback(async (
@@ -64,6 +67,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
 
         // 累积音频数据
         audioBufferRef.current.push(int16Data);
+        allAudioDataRef.current.push(int16Data); // 同时保存到完整录音
 
         // 每3秒发送一次（避免频繁调用 API）
         const now = Date.now();
@@ -107,8 +111,28 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   const stopRecording = useCallback(() => {
     console.log('🛑 Stopping recording...');
     
+    // 生成完整的录音文件（WAV格式）
+    let audioBlob: Blob | null = null;
+    
+    if (allAudioDataRef.current.length > 0) {
+      // 合并所有音频数据
+      const totalLength = allAudioDataRef.current.reduce((sum, arr) => sum + arr.length, 0);
+      const mergedData = new Int16Array(totalLength);
+      let offset = 0;
+      for (const chunk of allAudioDataRef.current) {
+        mergedData.set(chunk, offset);
+        offset += chunk.length;
+      }
+      
+      // 创建 WAV 文件
+      audioBlob = createWavBlob(mergedData, 16000, 1);
+      setRecordingBlob(audioBlob);
+      console.log(`📼 Recording saved: ${(audioBlob.size / 1024 / 1024).toFixed(2)} MB`);
+    }
+    
     // 清空音频缓冲区
     audioBufferRef.current = [];
+    allAudioDataRef.current = [];
     lastSendTimeRef.current = 0;
 
     // 断开音频处理器（必须先断开，再停止轨道）
@@ -137,13 +161,56 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
 
     setIsRecording(false);
     console.log('✅ Recording stopped successfully');
+    
+    return audioBlob;
   }, []);
 
   return {
     isRecording,
     startRecording,
     stopRecording,
-    error
+    error,
+    recordingBlob
   };
 };
 
+// 创建 WAV 文件的辅助函数
+function createWavBlob(pcmData: Int16Array, sampleRate: number, numChannels: number): Blob {
+  const dataLength = pcmData.length * 2; // 16-bit = 2 bytes per sample
+  const buffer = new ArrayBuffer(44 + dataLength);
+  const view = new DataView(buffer);
+
+  // WAV 文件头
+  // "RIFF" chunk descriptor
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true); // File size - 8
+  writeString(view, 8, 'WAVE');
+
+  // "fmt " sub-chunk
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+  view.setUint16(20, 1, true); // AudioFormat (1 for PCM)
+  view.setUint16(22, numChannels, true); // NumChannels
+  view.setUint32(24, sampleRate, true); // SampleRate
+  view.setUint32(28, sampleRate * numChannels * 2, true); // ByteRate
+  view.setUint16(32, numChannels * 2, true); // BlockAlign
+  view.setUint16(34, 16, true); // BitsPerSample
+
+  // "data" sub-chunk
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataLength, true); // Subchunk2Size
+
+  // 写入 PCM 数据
+  const offset = 44;
+  for (let i = 0; i < pcmData.length; i++) {
+    view.setInt16(offset + i * 2, pcmData[i], true);
+  }
+
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+function writeString(view: DataView, offset: number, string: string) {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}

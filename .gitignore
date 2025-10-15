@@ -50,3 +50,10 @@ htmlcov/
 *.tmp
 .spec-workflow/approvals/
 
+# Recordings (audio files)
+backend/recordings/
+*.wav
+*.mp3
+
+# Speaker recognition data
+backend/professor_embedding.npy
