@@ -233,6 +233,54 @@ English translation:"""
             logger.error(f"Silence detection failed: {e}")
             return False
 
+    def clean_transcription(self, text: str) -> str:
+        """
+        清理转录文本，移除异常重复和无意义内容
+        """
+        if not text:
+            return text
+        
+        import re
+        
+        # 1. 检测字符级别的异常重复（如"课程"重复100次）
+        def remove_excessive_repetition(s: str) -> str:
+            # 检测2-10字的重复模式
+            for pattern_len in range(2, 11):
+                # 寻找至少重复5次的模式
+                pattern = r'(.{' + str(pattern_len) + r',}?)(\1{4,})'
+                match = re.search(pattern, s)
+                if match:
+                    # 找到重复，只保留一次
+                    repeated_text = match.group(1)
+                    logger.warning(f"⚠️ Detected excessive repetition: '{repeated_text}' x {len(match.group(2)) // len(repeated_text) + 1}")
+                    # 替换为单次出现
+                    s = s[:match.start()] + repeated_text + s[match.end():]
+            return s
+        
+        cleaned = remove_excessive_repetition(text)
+        
+        # 2. 移除过长的异常文本（超过200字符认为异常）
+        if len(cleaned) > 300:
+            # 检查是否大部分是重复字符
+            unique_chars = len(set(cleaned))
+            total_chars = len(cleaned)
+            if unique_chars < total_chars * 0.1:  # 重复度过高
+                logger.warning(f"⚠️ Text has too much repetition, truncating (unique: {unique_chars}, total: {total_chars})")
+                # 截取前50个字符
+                cleaned = cleaned[:50] + "..."
+        
+        # 3. 移除连续的标点符号
+        cleaned = re.sub(r'[、，。,.\s]{3,}', '、', cleaned)
+        
+        # 4. 去除首尾的标点和空格
+        cleaned = cleaned.strip('、，。,. \n\r\t')
+        
+        # 5. 如果文本太短且没有实际内容，返回空
+        if len(cleaned) < 2 or cleaned in ['、', '，', '。', '.', ',']:
+            return ""
+        
+        return cleaned
+    
     def detect_speaker(self, audio_bytes: bytes, timestamp: float) -> tuple[str, float]:
         """
         检测说话人（使用声纹识别）
@@ -279,18 +327,33 @@ English translation:"""
                 task="transcribe",
                 fp16=False,  # 在 CPU 上运行
                 initial_prompt=initial_prompt,  # 提供专业术语提示
-                temperature=0.0  # 降低温度，减少随机性
+                temperature=0.0,  # 降低温度，减少随机性
+                condition_on_previous_text=True,  # 使用上下文，提高连贯性
+                no_speech_threshold=0.6,  # 提高静音检测阈值
+                logprob_threshold=-1.0,  # 降低置信度阈值，减少幻觉
+                compression_ratio_threshold=2.4,  # 压缩率阈值，过滤重复内容
+                word_timestamps=False  # 关闭单词时间戳，提高速度
             )
             
             transcript = result["text"].strip()
             detected_lang = result.get("language", "unknown")
             
+            # 清理转录文本（移除异常重复）
+            transcript_cleaned = self.clean_transcription(transcript)
+            
+            # 如果清理后为空，记录原始文本
+            if not transcript_cleaned and transcript:
+                logger.warning(f"⚠️ Transcription cleaned to empty. Original: '{transcript}'")
+                return "", "unknown", 0.0
+            
             # 检测说话人（使用声纹识别）
             speaker_type, confidence = self.detect_speaker(audio_bytes, time.time())
             
-            logger.info(f"📝 Whisper transcription: '{transcript}' (lang: {detected_lang}, speaker: {speaker_type}, confidence: {confidence:.2f})")
+            if transcript != transcript_cleaned:
+                logger.info(f"🧹 Cleaned transcription: '{transcript}' → '{transcript_cleaned}'")
+            logger.info(f"📝 Whisper transcription: '{transcript_cleaned}' (lang: {detected_lang}, speaker: {speaker_type}, confidence: {confidence:.2f})")
             
-            return transcript, speaker_type, confidence
+            return transcript_cleaned, speaker_type, confidence
             
         except Exception as e:
             logger.error(f"Whisper transcription failed: {e}")
