@@ -1,100 +1,78 @@
 # 课堂录音笔记
 
-## 📝 我的笔记
-
-测试笔记
-
-statistics 统计学
-
-1
-
-2
-
-3
-
 ## 🎤 转录记录
 
-### 09:50:30
+### 10:00:35
+
+**原文** (zh):
+aplus、星课堂、ap統计板块的第一节课
+
+**English**:
+aplus, Star Classroom, the first lesson of the ap statistics section
+
+---
+
+### 10:00:38
+
+**原文** (zh):
+在今天这张课当中我们会讲到
+
+**English**:
+In today's lesson, we will discuss
+
+---
+
+### 10:00:41
+
+**原文** (zh):
+统计学当中三个十分重要的概念
+
+**English**:
+Three very important concepts in statistics
+
+---
+
+### 10:00:44
 
 **原文** (en):
-。
+and so on
 
 **English**:
-。
+and so on
 
 ---
 
-### 09:50:32
-
-**原文** (zh):
-、viple、倾客堂、ap统计板块的第一节课。
-
-**English**:
-, viple, Qingke Tang, the first lesson of the AP Statistics section.
-
----
-
-### 09:50:35
-
-**原文** (zh):
-在今天这堂课当中我们会讲到统计
-
-**English**:
-In today's class, we will talk about statistics.
-
----
-
-### 09:50:38
-
-**原文** (zh):
-、学当中三个十分重要的概念。
-
-**English**:
-three very important concepts in learning.
-
----
-
-### 09:50:41
+### 10:00:47
 
 **原文** (en):
-identifying individuals, variables, and color.
+and categorical variables in a dataset. Do it
 
 **English**:
-identifying individuals, variables, and color.
+and categorical variables in a dataset. Do it
 
 ---
 
-### 09:50:44
-
-**原文** (en):
-and local variables in a dataset.
-
-**English**:
-and local variables in a dataset.
-
----
-
-### 09:50:48
+### 10:00:50
 
 **原文** (zh):
-首先来看一下这三个非常
+我们首先来看一下这三个非
 
 **English**:
-First, let's look at these three very
+Let's first look at these three non-
 
 ---
 
-### 09:50:55
+### 10:00:53
 
 **原文** (zh):
-、概念、概率、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、课程、
+非常重要的概念,他们的definition是怎么样子的
 
 **English**:
-Concepts, Probability, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course, Course,
+A very important concept, what is their definition
 
 ---
 
-### 09:50:56
+### 10:00:56
 
 **原文** (zh):
 首先是我们的individuals
@@ -104,47 +82,47 @@ First are our individuals
 
 ---
 
-### 09:50:58
+### 10:00:59
 
 **原文** (zh):
-individuals 一般就是我们所需要的。
+individuals 一般只是我们
 
 **English**:
-Individuals are generally what we need.
+individuals are generally just us
 
 ---
 
-### 09:51:00
+### 10:01:02
 
 **原文** (zh):
-各体
+所说的个体
 
 **English**:
-Various bodies
+The individual in question
 
 ---
 
-### 09:51:03
+### 10:01:05
 
 **原文** (zh):
-、实验、观察、调查中。
+试验、观察、调查等
 
 **English**:
-in experiments, observations, and investigations.
+Experiments, observations, investigations, etc.
 
 ---
 
-### 09:51:06
+### 10:01:08
 
 **原文** (zh):
-一个对象。
+和当中的一个对象
 
 **English**:
-An object.
+One of the objects
 
 ---
 
-### 09:51:09
+### 10:01:11
 
 **原文** (zh):
 这个意思来说,如果我们想要调查
@@ -154,161 +132,27 @@ In this sense, if we want to investigate
 
 ---
 
-### 09:51:12
+### 10:01:15
 
 **原文** (zh):
-9年级三班,他在这……
+9年级三班,他在……
 
 **English**:
-Class 3, Grade 9, he's here...
+Class 3, Grade 9, he...
 
 ---
 
-### 09:51:15
+### 10:01:18
 
 **原文** (zh):
-其他设计中的英语设计程。
-
-**English**:
-English design process in other designs.
+在这个期末考试当中英语
 
 ---
 
-### 09:51:19
+### 10:01:25
 
 **原文** (zh):
-等线性的一个分布情况。
-
-**English**:
-A distribution of linear segments.
-
----
-
-### 09:51:22
-
-**原文** (zh):
-、differentials、下面,这个九年三班每一位同学就是我们。
-
-**English**:
-, differentials, below, every student in this class nine, class three is us.
-
----
-
-### 09:51:25
-
-**原文** (zh):
-、调查当中的个体。
-
-**English**:
-Individuals under investigation.
-
----
-
-### 09:51:28
-
-**原文** (zh):
-就是我们所对的individuals。
-
-**English**:
-It is the individuals we are targeting.
-
----
-
-### 09:51:31
-
-**原文** (zh):
-、individuals 密切相关的概念叫做 a verb.
-
-**English**:
-A concept closely related to individuals is called a verb.
-
----
-
-### 09:51:34
-
-**原文** (zh):
-、parables。因为我们在确定
-
-**English**:
-, parables. Because we are determining
-
----
-
-### 09:51:37
-
-**原文** (zh):
-等设定了我们这个study的这个intel
-
-**English**:
-Once we've set up the intel for this study
-
----
-
-### 09:51:40
-
-**原文** (zh):
-、visuals 之后呢,我们想要研究,想要...
-
-**English**:
-After the visuals, we want to research, we want to...
-
----
-
-### 09:51:43
-
-**原文** (zh):
-调查的是有关于这个individual的什么东西呢?
-
-**English**:
-What is being investigated regarding this individual?
-
----
-
-### 09:51:46
-
-**原文** (zh):
-一般来说,这样叫做 variables 变亮。
-
-**English**:
-Generally, this is called variables brightening.
-
----
-
-### 09:51:53
-
-**原文** (zh):
-、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、数字、
-
----
-
-### 09:51:55
-
-**原文** (zh):
-这样这个概念在AP这个统计学当中给到
-
----
-
-### 09:51:57
-
-**原文** (zh):
-的一个比较相对于来说官方的加速度。
-
----
-
-### 09:51:58
-
-**原文** (en):
-就是variable is any character.
-
-**English**:
-就是variable is any character.
-
----
-
-### 09:52:01
-
-**原文** (zh):
-还是任何一种特征的课程。
+数量
 
 ---
 

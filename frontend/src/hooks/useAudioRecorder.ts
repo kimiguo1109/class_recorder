@@ -22,6 +22,7 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
   const audioBufferRef = useRef<Int16Array[]>([]);
   const allAudioDataRef = useRef<Int16Array[]>([]); // 保存完整录音
   const lastSendTimeRef = useRef<number>(0);
+  const silenceCountRef = useRef<number>(0); // 连续静音帧计数
 
   const startRecording = useCallback(async (
     onAudioData: (base64Data: string, timestamp: number) => void
@@ -69,9 +70,35 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
         audioBufferRef.current.push(int16Data);
         allAudioDataRef.current.push(int16Data); // 同时保存到完整录音
 
-        // 每3秒发送一次（避免频繁调用 API）
+        // 计算当前帧的音频能量（用于静音检测）
+        let sumSquare = 0;
+        for (let i = 0; i < float32Data.length; i++) {
+          sumSquare += float32Data[i] * float32Data[i];
+        }
+        const rms = Math.sqrt(sumSquare / float32Data.length);
+        const isSilent = rms < 0.01; // 静音阈值
+
+        // 更新静音计数
+        if (isSilent) {
+          silenceCountRef.current++;
+        } else {
+          silenceCountRef.current = 0;
+        }
+
         const now = Date.now();
-        if (now - lastSendTimeRef.current >= 3000) {
+        const timeSinceLastSend = now - lastSendTimeRef.current;
+        const bufferDuration = audioBufferRef.current.length * 4096 / 16000; // 秒
+
+        // 智能发送策略：
+        // 1. 至少累积 5 秒音频（给 Whisper 更多上下文）
+        // 2. 检测到连续 10 帧（约 2.5 秒）静音后发送（自然停顿点）
+        // 3. 最多累积 10 秒（避免过长）
+        const shouldSend = (
+          (timeSinceLastSend >= 5000 && silenceCountRef.current >= 10) || // 5秒后遇到停顿
+          timeSinceLastSend >= 10000 // 最长10秒
+        );
+
+        if (shouldSend && audioBufferRef.current.length > 0) {
           // 合并所有缓冲的音频数据
           const totalLength = audioBufferRef.current.reduce((sum, arr) => sum + arr.length, 0);
           const mergedData = new Int16Array(totalLength);
@@ -86,10 +113,12 @@ export const useAudioRecorder = (): UseAudioRecorderReturn => {
           const base64 = btoa(String.fromCharCode(...uint8Data));
 
           // 发送音频数据
+          console.log(`📤 Sending ${bufferDuration.toFixed(1)}s audio (silence: ${isSilent})`);
           onAudioData(base64, now);
 
-          // 清空缓冲区
+          // 清空缓冲区和静音计数
           audioBufferRef.current = [];
+          silenceCountRef.current = 0;
           lastSendTimeRef.current = now;
         }
       };
