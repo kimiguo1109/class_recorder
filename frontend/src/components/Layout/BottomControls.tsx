@@ -25,8 +25,13 @@ export const BottomControls = ({
   
   const handleDownloadRecording = () => {
     if (recordingUrl) {
+      // 确保 URL 是完整的，如果是相对路径则添加域名
+      const fullUrl = recordingUrl.startsWith('http') 
+        ? recordingUrl 
+        : `http://localhost:8000${recordingUrl}`;
+      
       const a = document.createElement('a');
-      a.href = recordingUrl;
+      a.href = fullUrl;
       a.download = recordingUrl.split('/').pop() || 'recording.wav';
       a.click();
     }

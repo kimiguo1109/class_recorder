@@ -135,15 +135,34 @@ async def upload_recording(
 @router.get("/api/recording/download/{filename}")
 async def download_recording(filename: str):
     """
-    下载录音文件（支持本地和 S3）
+    下载录音文件（优先本地，备选 S3）
     
     参数:
         filename: 文件名
     """
     try:
-        # 如果使用 S3，生成预签名 URL 并重定向
+        # 优先检查本地文件
+        filepath = os.path.join(RECORDINGS_DIR, filename)
+        
+        if os.path.exists(filepath):
+            # 本地文件存在，直接返回
+            logger.info(f"📥 Downloading recording from local: {filename}")
+            return FileResponse(
+                filepath,
+                media_type="audio/wav",
+                filename=filename
+            )
+        
+        # 本地文件不存在，尝试从 S3 下载
         if settings.USE_S3_STORAGE and s3_client:
             try:
+                # 检查 S3 上是否有文件
+                s3_client.head_object(
+                    Bucket=settings.AWS_S3_BUCKET,
+                    Key=f"recordings/{filename}"
+                )
+                
+                # 生成预签名 URL
                 url = s3_client.generate_presigned_url(
                     'get_object',
                     Params={
@@ -154,23 +173,13 @@ async def download_recording(filename: str):
                 )
                 logger.info(f"📥 Redirecting to S3: {filename}")
                 return RedirectResponse(url=url)
+                
             except ClientError as e:
                 logger.error(f"❌ S3 download failed: {e}")
-                # 回退到本地文件
+                # S3 也没有，返回 404
         
-        # 本地文件下载
-        filepath = os.path.join(RECORDINGS_DIR, filename)
-        
-        if not os.path.exists(filepath):
-            raise HTTPException(status_code=404, detail="录音文件不存在")
-        
-        logger.info(f"📥 Downloading recording from local: {filename}")
-        
-        return FileResponse(
-            filepath,
-            media_type="audio/wav",
-            filename=filename
-        )
+        # 本地和 S3 都没有
+        raise HTTPException(status_code=404, detail="录音文件不存在")
         
     except HTTPException:
         raise
